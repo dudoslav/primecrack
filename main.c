@@ -1,6 +1,6 @@
 #include<stdio.h>
 #include<time.h>
-#include<math.h>
+#include<getopt.h>
 #include<gmp.h>
 
 typedef struct {
@@ -33,29 +33,6 @@ static void test(const char* funcName, int (*func)(mpz_t, divres_t*), mpz_t numb
 #define TEST(func, number) test(#func, func, number)
 
 /* Definitions of cracking functions */
-
-static int sqrtFind(mpz_t number, divres_t *result) {
-    mpz_t sqrtNumber;
-    mpz_init(sqrtNumber);
-    mpz_sqrt(sqrtNumber, number);
-
-    mpz_t iter;
-    mpz_init(iter);
-    mpz_set_ui(iter, 2);
-    for (; mpz_cmp(iter, sqrtNumber) < 0; mpz_add_ui(iter, iter, 1)) {
-        if (mpz_divisible_p(number, iter)) {
-            mpz_set(result->n1, iter);
-            mpz_cdiv_q(result->n2, number, iter);
-            mpz_clear(sqrtNumber);
-            mpz_clear(iter);
-            return 1;
-        }
-    }
-
-    mpz_clear(sqrtNumber);
-    mpz_clear(iter);
-    return 0;
-}
 
 static int sqrtStepFind(mpz_t number, divres_t *result) {
     unsigned long int steps[] = {2, 4, 2, 2};
@@ -92,7 +69,6 @@ static int sqrtStepFind(mpz_t number, divres_t *result) {
         return 1;
     }
 
-
     unsigned int pos = 0;
     mpz_t iter;
     mpz_init(iter);
@@ -114,33 +90,54 @@ static int sqrtStepFind(mpz_t number, divres_t *result) {
 
 /* END Definitions of cracking functions */
 
-static char* numbers[] = {"21"
-                          , "62615533"
-                          , "805913377"
-                          , "999962000357"
-                          , "1074889006972199"
-                          , "10142789312725007"
-                          , "308985181678252244034230903546833719469"
-                          , "70333883891476121734563680282984266734194159038582242804233001028050105973573"};
-
-static void runTests(mpz_t number) {
-    //TEST(sqrtFind, number);
-    TEST(sqrtStepFind, number);
-}
-
-int main(void)
-{
+static void crack(char *numberChar, int base) {
     mpz_t number;
     mpz_init(number);
 
-    for (size_t i = 0; i < (sizeof(numbers) / 4); ++i) {
-        if (!mpz_set_str(number, numbers[i], 10)) {
-            runTests(number);
-        } else {
-            fprintf(stderr, "ERROR: failed to convert string into number. String: %s", numbers[i]);
-        }
+    if (!mpz_set_str(number, numberChar, base)) {
+        TEST(sqrtStepFind, number);
+    } else {
+        fprintf(stderr, "ERROR: failed to convert string into number. String: %s\n", numberChar);
     }
 
     mpz_clear(number);
+}
+
+static void printHelp() {
+    printf("############################################\n");
+    printf("|PrimeCrack is program for deviding numbers|\n");
+    printf("|into their fractions. Useful for RSA      |\n");
+    printf("|cracking. Bigger numbers (64+ bit) may be |\n");
+    printf("|slow, nearly impossible to crack.         |\n");
+    printf("|Options:                                  |\n");
+    printf("|    -d     followed by decimal     number |\n");
+    printf("|    -o     followed by octal       number |\n");
+    printf("|    -x     followed by hexadecimal number |\n");
+    printf("|    -h     shows this help                |\n");
+    printf("############################################\n");
+}
+
+int main(int argc, char **argv)
+{
+    int opt;
+    while ((opt = getopt(argc, argv, "x:o:d:h")) != -1) {
+        switch (opt) {
+            case 'x':
+                crack(optarg, 16);
+                break;
+            case 'o':
+                crack(optarg, 8);
+                break;
+            case 'd':
+                crack(optarg, 10);
+                break;
+            case 'h':
+                printHelp();
+                break;
+            default:
+                fprintf(stderr, "ERROR: Wrong argument\n");
+        }
+    }
+
     return 0;
 }
