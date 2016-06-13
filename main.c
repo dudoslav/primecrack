@@ -21,7 +21,8 @@ static void test(const char* funcName, int (*func)(mpz_t, divres_t*), mpz_t numb
     if (func(number, &result)) {
         printf("\t n1: "); mpz_out_str(stdout, 10, result.n1); printf("\n");
         printf("\t n2: "); mpz_out_str(stdout, 10, result.n2); printf("\n");
-        printf("\tComputation time: %ld\n", (clock() + startTicks));
+        printf("\tComputation ticks: %ld ticks\n", (clock() + startTicks));
+        printf("\tComputation time : %f seconds\n", (float)(clock() + startTicks) / CLOCKS_PER_SEC);
     } else {
         printf("\tCouldn't devide\n");
     }
