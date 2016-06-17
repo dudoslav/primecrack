@@ -35,8 +35,8 @@ static void test(const char* funcName, int (*func)(mpz_t, divres_t*), mpz_t numb
 
 /* Definitions of cracking functions */
 
-static int sqrtStepFind(mpz_t number, divres_t *result) {
-    unsigned long int steps[] = {2, 4, 2, 2};
+static int sqrtInvertStepFind(mpz_t number, divres_t *result) {
+    unsigned long int steps[] = {2, 2, 4, 2};
 
     mpz_t sqrtNumber;
     mpz_init(sqrtNumber);
@@ -70,22 +70,37 @@ static int sqrtStepFind(mpz_t number, divres_t *result) {
         return 1;
     }
 
-    unsigned int pos = 0;
-    mpz_t iter;
-    mpz_init(iter);
-    mpz_set_ui(iter, 11);
-    while (mpz_cmp(iter, sqrtNumber) < 0) {
-        if (mpz_divisible_p(number, iter)) {
-            mpz_set(result->n1, iter);
-            mpz_cdiv_q(result->n2, number, iter);
+    mpz_t reminder;
+    mpz_init(reminder);
+    while (1) {
+        mpz_mod_ui(reminder, sqrtNumber, 10);
+        if (mpz_divisible_p(number, sqrtNumber)) {
+            mpz_set_ui(result->n1, 7);
+            mpz_cdiv_q_ui(result->n2, number, 7);
             mpz_clear(sqrtNumber);
-            mpz_clear(iter);
+            mpz_clear(reminder);
             return 1;
         }
-        mpz_add_ui(iter, iter, steps[pos]);
+        if (0 == mpz_cmp_ui(reminder, 1)) {
+            break;
+        }
+        mpz_sub_ui(sqrtNumber, sqrtNumber, 1);
+    }
+    mpz_clear(reminder);
+
+    unsigned int pos = 0;
+    while (mpz_cmp_ui(sqrtNumber, 7) > 0) {
+        if (mpz_divisible_p(number, sqrtNumber)) {
+            mpz_set(result->n1, sqrtNumber);
+            mpz_cdiv_q(result->n2, number, sqrtNumber);
+            mpz_clear(sqrtNumber);
+            return 1;
+        }
+        mpz_sub_ui(sqrtNumber, sqrtNumber, steps[pos]);
         pos = (pos + 1) % 4;
     }
 
+    mpz_clear(sqrtNumber);
     return 0;
 }
 
@@ -96,7 +111,7 @@ static void crack(char *numberChar, int base) {
     mpz_init(number);
 
     if (!mpz_set_str(number, numberChar, base)) {
-        TEST(sqrtStepFind, number);
+        TEST(sqrtInvertStepFind, number);
     } else {
         fprintf(stderr, "ERROR: failed to convert string into number. String: %s\n", numberChar);
     }
